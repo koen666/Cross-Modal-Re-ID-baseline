@@ -59,11 +59,11 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 dataset = args.dataset
 if dataset == 'sysu':
-    data_path = '../Datasets/SYSU-MM01/ori_data/'
+    data_path = './data/SYSU-MM01'
     n_class = 395
     test_mode = [1, 2]
 elif dataset =='regdb':
-    data_path = '../Datasets/RegDB/'
+    data_path = './data/RegDB'
     n_class = 206
     test_mode = [2, 1]
  

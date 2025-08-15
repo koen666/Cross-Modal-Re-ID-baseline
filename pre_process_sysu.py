@@ -1,75 +1,56 @@
 import numpy as np
 from PIL import Image
-import pdb
 import os
 
-data_path = '/home/datasets/prml/computervision/re-id/sysu-mm01/ori_data'
+data_path = './data/SYSU-MM01'
 
-rgb_cameras = ['cam1','cam2','cam4','cam5']
-ir_cameras = ['cam3','cam6']
-
-# load id info
-file_path_train = os.path.join(data_path,'exp/train_id.txt')
-file_path_val   = os.path.join(data_path,'exp/val_id.txt')
-with open(file_path_train, 'r') as file:
-    ids = file.read().splitlines()
-    ids = [int(y) for y in ids[0].split(',')]
-    id_train = ["%04d" % x for x in ids]
-    
-with open(file_path_val, 'r') as file:
-    ids = file.read().splitlines()
-    ids = [int(y) for y in ids[0].split(',')]
-    id_val = ["%04d" % x for x in ids]
-    
-# combine train and val split   
-id_train.extend(id_val) 
-
-files_rgb = []
-files_ir = []
-for id in sorted(id_train):
-    for cam in rgb_cameras:
-        img_dir = os.path.join(data_path,cam,id)
-        if os.path.isdir(img_dir):
-            new_files = sorted([img_dir+'/'+i for i in os.listdir(img_dir)])
-            files_rgb.extend(new_files)
-            
-    for cam in ir_cameras:
-        img_dir = os.path.join(data_path,cam,id)
-        if os.path.isdir(img_dir):
-            new_files = sorted([img_dir+'/'+i for i in os.listdir(img_dir)])
-            files_ir.extend(new_files)
-
-# relabel
-pid_container = set()
-for img_path in files_ir:
-    pid = int(img_path[-13:-9])
-    pid_container.add(pid)
-pid2label = {pid:label for label, pid in enumerate(pid_container)}
+# 图片尺寸
 fix_image_width = 144
 fix_image_height = 288
-def read_imgs(train_image):
+
+# RGB 和 IR 的子目录
+rgb_dirs = ['rgb_modify/bounding_box_train', 'rgb_modify/query', 'rgb_modify/bounding_box_test']
+ir_dirs  = ['ir_modify/bounding_box_train', 'ir_modify/query', 'ir_modify/bounding_box_test']
+
+# 读取图片函数
+def read_imgs(file_list):
     train_img = []
     train_label = []
-    for img_path in train_image:
-        # img
-        img = Image.open(img_path)
-        img = img.resize((fix_image_width, fix_image_height), Image.ANTIALIAS)
-        pix_array = np.array(img)
-
-        train_img.append(pix_array) 
-        
-        # label
-        pid = int(img_path[-13:-9])
-        pid = pid2label[pid]
-        train_label.append(pid)
+    for idx, img_path in enumerate(file_list):
+        img = Image.open(img_path).convert('RGB')
+        # 兼容新版 Pillow 的 resample
+        resample_method = getattr(Image, 'Resampling', Image).LANCZOS
+        img = img.resize((fix_image_width, fix_image_height), resample=resample_method)
+        train_img.append(np.array(img))
+        train_label.append(idx)  # 顺序编号
     return np.array(train_img), np.array(train_label)
-       
-# rgb imges
-train_img, train_label = read_imgs(files_rgb)
-np.save(data_path + 'train_rgb_resized_img.npy', train_img)
-np.save(data_path + 'train_rgb_resized_label.npy', train_label)
 
-# ir imges
-train_img, train_label = read_imgs(files_ir)
-np.save(data_path + 'train_ir_resized_img.npy', train_img)
-np.save(data_path + 'train_ir_resized_label.npy', train_label)
+# 扫描 RGB
+files_rgb = []
+for dir in rgb_dirs:
+    img_dir = os.path.join(data_path, dir)
+    if os.path.isdir(img_dir):
+        new_files = sorted([os.path.join(img_dir, f) for f in os.listdir(img_dir) if f.lower().endswith('.jpg')])
+        files_rgb.extend(new_files)
+print(f"Found {len(files_rgb)} RGB images")
+
+# 扫描 IR
+files_ir = []
+for dir in ir_dirs:
+    img_dir = os.path.join(data_path, dir)
+    if os.path.isdir(img_dir):
+        new_files = sorted([os.path.join(img_dir, f) for f in os.listdir(img_dir) if f.lower().endswith('.jpg')])
+        files_ir.extend(new_files)
+print(f"Found {len(files_ir)} IR images")
+
+# 读取并保存 RGB
+train_rgb_img, train_rgb_label = read_imgs(files_rgb)
+np.save(os.path.join(data_path, 'train_rgb_resized_img.npy'), train_rgb_img)
+np.save(os.path.join(data_path, 'train_rgb_resized_label.npy'), train_rgb_label)
+
+# 读取并保存 IR
+train_ir_img, train_ir_label = read_imgs(files_ir)
+np.save(os.path.join(data_path, 'train_ir_resized_img.npy'), train_ir_img)
+np.save(os.path.join(data_path, 'train_ir_resized_label.npy'), train_ir_label)
+
+print("Preprocessing completed successfully!")

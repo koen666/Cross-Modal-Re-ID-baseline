@@ -9,7 +9,7 @@ def process_query_sysu(data_path, mode = 'all', relabel=False):
     elif mode =='indoor':
         ir_cameras = ['cam3','cam6']
     
-    file_path = os.path.join(data_path,'exp/test_id.txt')
+    file_path = os.path.join(data_path,'./test_id.txt')
     files_rgb = []
     files_ir = []
 
@@ -43,7 +43,7 @@ def process_gallery_sysu(data_path, mode = 'all', trial = 0, relabel=False):
     elif mode =='indoor':
         rgb_cameras = ['cam1','cam2']
         
-    file_path = os.path.join(data_path,'exp/test_id.txt')
+    file_path = os.path.join(data_path,'./test_id.txt')
     files_rgb = []
     with open(file_path, 'r') as file:
         ids = file.read().splitlines()

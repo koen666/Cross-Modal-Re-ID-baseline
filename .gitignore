@@ -1,0 +1,4 @@
+data/
+save_model/
+log/
+__pycache__/
